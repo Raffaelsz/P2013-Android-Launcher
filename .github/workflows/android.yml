@@ -19,17 +19,35 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Encontrar e extrair projeto
+      - name: Extrair projeto ZIP
         run: |
           ZIP=$(find . -maxdepth 2 -name 'PES2013_Android_Launcher_Com_Build_Automatico.zip' -print -quit)
-          if [ -n "$ZIP" ]; then
-            mkdir -p /tmp/pes-project
-            unzip -o "$ZIP" -d /tmp/pes-project
-            PROJECT=$(find /tmp/pes-project -name settings.gradle.kts -print -quit)
-            if [ -n "$PROJECT" ]; then
-              cp -a "$(dirname "$PROJECT")"/. .
-            fi
+
+          if [ -z "$ZIP" ]; then
+            echo "ERRO: arquivo ZIP não encontrado."
+            exit 1
           fi
+
+          mkdir -p /tmp/pes-project
+          unzip -o "$ZIP" -d /tmp/pes-project
+
+          SETTINGS=$(find /tmp/pes-project -name 'settings.gradle.kts' -print -quit)
+
+          if [ -z "$SETTINGS" ]; then
+            SETTINGS=$(find /tmp/pes-project -name 'settings.gradle' -print -quit)
+          fi
+
+          if [ -z "$SETTINGS" ]; then
+            echo "ERRO: arquivo settings.gradle não encontrado no ZIP."
+            exit 1
+          fi
+
+          ROOT=$(dirname "$SETTINGS")
+          cp -a "$ROOT"/. .
+
+          echo "Arquivos do projeto:"
+          ls -la
+          ls -la app
 
       - name: Configurar Gradle
         uses: gradle/actions/setup-gradle@v4
